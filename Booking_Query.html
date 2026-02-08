@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>預約查詢</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        :root { --primary-color: #2e86de; --bg-color: #f1f2f6; }
+        body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .list-container { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 12px; }
+        .booking-card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid var(--primary-color); }
+        .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
+        .date-badge { font-weight: 700; color: var(--primary-color); font-size: 16px; }
+        .info-row { font-size: 14px; margin: 5px 0; color: #2f3542; display: flex; justify-content: space-between; }
+        .label { color: #a4b0be; }
+        .val { font-weight: 500; }
+        .cancel-btn { width: 100%; border: none; padding: 10px; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; transition: 0.3s; background: #ee5253; color: white; }
+        .btn-disabled { background: #ced6e0; color: white; cursor: not-allowed; }
+        .notice { font-size: 12px; color: #eb4d4b; text-align: center; margin-top: 8px; font-weight: bold; }
+        #loading, #no-data { text-align: center; color: #747d8c; margin-top: 50px; display: none; }
+    </style>
+</head>
+<body>
+    <h2 style="color: #2f3542;">📅 我的預約紀錄</h2>
+    <div id="loading">讀取資料中...</div>
+    <div id="no-data">目前沒有符合條件的預約</div>
+    <div class="list-container" id="list-area"></div>
+
+    <script>
+        const LIFF_ID = '2008965576-txfwY86y';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzciNP_1cdq9XBnfcgTj5gv_QEt2xk-cevUsocHJx5j4IxjhJvS9DHHz1hhPXzDQHl/exec';
+        let userId = "";
+
+        window.onload = () => {
+            liff.init({ liffId: LIFF_ID }).then(() => {
+                if (!liff.isLoggedIn()) { liff.login(); } 
+                else { liff.getProfile().then(p => { userId = p.userId; fetchData(); }); }
+            });
+        };
+
+        function fetchData() {
+            document.getElementById('loading').style.display = 'block';
+            fetch(`${GAS_URL}?action=get_booking_history&u_id=${userId}`)
+                .then(res => res.json()).then(res => {
+                    document.getElementById('loading').style.display = 'none';
+                    if (res.status === 'success' && res.data.length > 0) { render(res.data); } 
+                    else { document.getElementById('no-data').style.display = 'block'; }
+                });
+        }
+
+        function cancelBooking(rId) {
+            Swal.fire({
+                title: '確定取消？',
+                text: "預約單號：" + rId,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ee5253',
+                cancelButtonColor: '#747d8c',
+                confirmButtonText: '確定取消',
+                cancelButtonText: '暫留預約'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.showLoading();
+                    fetch(`${GAS_URL}?action=cancel_booking&r_id=${rId}`)
+                        .then(res => res.json()).then(res => {
+                            if (res.status === 'success') {
+                                Swal.fire('已取消', res.message, 'success').then(() => location.reload());
+                            } else {
+                                Swal.fire('錯誤', res.message, 'error');
+                            }
+                        });
+                }
+            });
+        }
+
+        function render(data) {
+            const area = document.getElementById('list-area');
+            area.innerHTML = data.map(item => {
+                const isConfirmed = item.rConfirm == "1";
+                return `
+                <div class="booking-card">
+                    <div class="card-header">
+                        <div class="date-badge">${item.rDate} <small style="color:#747d8c">${item.startTime}</small></div>
+                        <div style="font-size:11px; font-weight:bold; color:${isConfirmed?'#1976d2':'#f57c00'}">${isConfirmed?'店家已確認':'待確認'}</div>
+                    </div>
+                    <div class="info-row"><span class="label">預約單號</span><span class="val">${item.rId}</span></div>
+                    <div class="info-row"><span class="label">寵物名稱</span><span class="val" style="color:#e67e22; font-weight:700;">${item.pName}</span></div>
+                    
+                    <button class="cancel-btn ${isConfirmed ? 'btn-disabled' : ''}" 
+                            ${isConfirmed ? 'disabled' : ''} 
+                            onclick="cancelBooking('${item.rId}')">取消預約</button>
+                    ${isConfirmed ? '<div class="notice">如需取消請聯絡店家，謝謝!!</div>' : ''}
+                </div>`;
+            }).join('');
+        }
+    </script>
+</body>
+</html>

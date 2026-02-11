@@ -5,17 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>預約查詢</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         :root { --primary-color: #2e86de; --bg-color: #f1f2f6; }
         body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .list-container { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 12px; }
-        /* 增加手勢指引，讓使用者知道可以點擊 */
-        .booking-card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid var(--primary-color); cursor: pointer; transition: 0.2s; }
-        .booking-card:active { transform: scale(0.98); }
-        .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
-        .date-badge { font-weight: 700; color: var(--primary-color); font-size: 16px; }
+        .booking-card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid var(--primary-color); }
+        /* ⭐ 修改: 增加 cursor pointer 提示可點擊，並增加點擊效果 */
+        .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; cursor: pointer; transition: background 0.2s; border-radius: 5px;}
+        .card-header:active { background: #f1f2f6; }
+        .date-badge { font-weight: 700; color: var(--primary-color); font-size: 16px; display: flex; align-items: center; gap: 5px;}
         .info-row { font-size: 14px; margin: 5px 0; color: #2f3542; display: flex; justify-content: space-between; }
         .label { color: #a4b0be; }
         .val { font-weight: 500; }
@@ -24,13 +25,12 @@
         .notice { font-size: 12px; color: #eb4d4b; text-align: center; margin-top: 8px; font-weight: bold; }
         #loading, #no-data { text-align: center; color: #747d8c; margin-top: 50px; display: none; }
 
-        /* QR Code 彈窗樣式 */
-        #qr-modal {
-            display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;
-        }
-        .qr-box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; }
-        .qr-box img { width: 100%; height: auto; margin: 15px 0; }
+        /* ⭐ 新增: QR Code Modal 相關樣式 */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 15px; text-align: center; position: relative; width: 80%; max-width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-close { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #aaa; }
+        #qrcode-container { display: flex; justify-content: center; margin: 20px 0; }
+        #modal-rid-text { font-weight: bold; color: var(--primary-color); margin-bottom: 10px; display: block;}
     </style>
 </head>
 <body>
@@ -39,53 +39,50 @@
     <div id="no-data">目前沒有符合條件的預約</div>
     <div class="list-container" id="list-area"></div>
 
-    <div id="qr-modal" onclick="closeQR()">
-        <div class="qr-box" onclick="event.stopPropagation()">
-            <h3 style="margin:0; font-size: 18px;">預約單 QR Code</h3>
-            <div id="qr-id-display" style="font-size: 12px; color: #747d8c; margin-top: 5px;"></div>
-            <img id="qr-img" src="" alt="QR Code">
-            <button class="cancel-btn" style="background:#2e86de;" onclick="closeQR()">關閉</button>
+    <div id="qrModal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal(event, true)">&times;</span>
+            <h3 style="margin: 0 0 10px 0; color: #2f3542;">預約單號 QR Code</h3>
+            <span id="modal-rid-text"></span>
+            <div id="qrcode-container"></div>
+            <p style="font-size: 12px; color: #747d8c; margin: 0;">請出示此畫面給店家掃描</p>
         </div>
     </div>
 
     <script>
-        const LIFF_ID = '2009076774-iFPf2YqP';
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbycJV_RoTxvkhOGFaE7zHZlenPpyimM-3J_DqeRjOPKM3dr7LnY0NpwrZ7OEFE61zjPmw/exec';
+        const LIFF_ID = '2009076774-iFPf2YqP'; // 請替換為您的 LIFF ID
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbycJV_RoTxvkhOGFaE7zHZlenPpyimM-3J_DqeRjOPKM3dr7LnY0NpwrZ7OEFE61zjPmw/exec'; // 請替換為您的 GAS URL
         let userId = "";
+        // ⭐ 新增: 全域變數存放 QR Code 物件
+        let qrcodeObj = null;
 
         window.onload = () => {
+            // 初始化 LIFF
             liff.init({ liffId: LIFF_ID }).then(() => {
-                if (!liff.isLoggedIn()) { liff.login(); } 
-                else { liff.getProfile().then(p => { userId = p.userId; fetchData(); }); }
+                 if (!liff.isLoggedIn()) { liff.login(); } 
+                 else { liff.getProfile().then(p => { userId = p.userId; fetchData(); }); }
+            }).catch(err => {
+                console.error('LIFF Initialization failed', err);
+                // 用於本地測試，若無 LIFF 環境可解開下方註解模擬
+                // userId = "DummyUser123"; fetchData(); 
             });
         };
 
         function fetchData() {
             document.getElementById('loading').style.display = 'block';
-            fetch(`${GAS_URL}?action=get_booking_history&u_id=${userId}`)
+            // 加上 timestamp 防止快取
+            fetch(`${GAS_URL}?action=get_booking_history&u_id=${userId}&t=${new Date().getTime()}`)
                 .then(res => res.json()).then(res => {
                     document.getElementById('loading').style.display = 'none';
                     if (res.status === 'success' && res.data.length > 0) { render(res.data); } 
                     else { document.getElementById('no-data').style.display = 'block'; }
+                }).catch(err => {
+                     document.getElementById('loading').innerText = '讀取失敗，請稍後再試';
                 });
         }
 
-        /**
-         * 彈出 QR Code 視窗
-         */
-        function showQR(rId) {
-            const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(rId)}&size=250`;
-            document.getElementById('qr-img').src = qrUrl;
-            document.getElementById('qr-id-display').innerText = "單號：" + rId;
-            document.getElementById('qr-modal').style.display = 'flex';
-        }
-
-        function closeQR() {
-            document.getElementById('qr-modal').style.display = 'none';
-        }
-
-        function cancelBooking(event, rId) {
-            event.stopPropagation(); // 重點：防止點擊取消按鈕時觸發卡片的 showQR
+        function cancelBooking(rId) {
+            // (此函式保持不變)
             Swal.fire({
                 title: '確定取消？',
                 text: "預約單號：" + rId,
@@ -101,23 +98,58 @@
                     fetch(`${GAS_URL}?action=cancel_booking&r_id=${rId}`)
                         .then(res => res.json()).then(res => {
                             if (res.status === 'success') {
-                                Swal.fire('已取消', res.message, 'success').then(() => location.reload());
+                                Swal.fire('已取消', res.message || '預約已成功取消', 'success').then(() => location.reload());
                             } else {
-                                Swal.fire('錯誤', res.message, 'error');
+                                Swal.fire('錯誤', res.message || '取消失敗', 'error');
                             }
                         });
                 }
             });
         }
 
+        // ⭐ 新增: 顯示 QR Code 視窗的函式
+        function showQRCode(rId) {
+            const modal = document.getElementById('qrModal');
+            const container = document.getElementById('qrcode-container');
+            document.getElementById('modal-rid-text').innerText = rId;
+            
+            // 清除舊的 QR Code
+            container.innerHTML = '';
+            
+            // 生成新的 QR Code
+            qrcodeObj = new QRCode(container, {
+                text: rId,
+                width: 180,
+                height: 180,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+            
+            // 顯示模態視窗 (使用 flex 以便置中)
+            modal.style.display = 'flex';
+        }
+
+        // ⭐ 新增: 關閉 QR Code 視窗的函式
+        function closeModal(event, forceClose = false) {
+            // 如果是點擊背景遮罩 (modal-overlay) 或是強制關閉按鈕才執行隱藏
+            if (event.target.classList.contains('modal-overlay') || forceClose) {
+                document.getElementById('qrModal').style.display = 'none';
+            }
+        }
+
         function render(data) {
             const area = document.getElementById('list-area');
             area.innerHTML = data.map(item => {
                 const isConfirmed = item.rConfirm == "1";
+                // ⭐ 修改: 在 card-header 加上 onclick 事件，並加入一個小圖示提示可點擊
                 return `
-                <div class="booking-card" onclick="showQR('${item.rId}')">
-                    <div class="card-header">
-                        <div class="date-badge">${item.rDate} <small style="color:#747d8c">${item.startTime}</small></div>
+                <div class="booking-card">
+                    <div class="card-header" onclick="showQRCode('${item.rId}')" title="點擊顯示 QR Code">
+                        <div class="date-badge">
+                            ${item.rDate} <small style="color:#747d8c; margin-left: 5px;">${item.startTime}</small>
+                            <span style="font-size: 14px; margin-left: 8px; color: #7f8c8d;">🔍</span>
+                        </div>
                         <div style="font-size:11px; font-weight:bold; color:${isConfirmed?'#1976d2':'#f57c00'}">${isConfirmed?'店家已確認':'待確認'}</div>
                     </div>
                     <div class="info-row"><span class="label">預約單號</span><span class="val">${item.rId}</span></div>
@@ -125,7 +157,7 @@
                     
                     <button class="cancel-btn ${isConfirmed ? 'btn-disabled' : ''}" 
                             ${isConfirmed ? 'disabled' : ''} 
-                            onclick="cancelBooking(event, '${item.rId}')">取消預約</button>
+                            onclick="cancelBooking('${item.rId}')">取消預約</button>
                     ${isConfirmed ? '<div class="notice">如需取消請聯絡店家，謝謝!!</div>' : ''}
                 </div>`;
             }).join('');

@@ -11,7 +11,9 @@
         :root { --primary-color: #2e86de; --bg-color: #f1f2f6; }
         body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg-color); margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .list-container { width: 100%; max-width: 450px; display: flex; flex-direction: column; gap: 12px; }
-        .booking-card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid var(--primary-color); }
+        /* 增加手勢指引，讓使用者知道可以點擊 */
+        .booking-card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-left: 6px solid var(--primary-color); cursor: pointer; transition: 0.2s; }
+        .booking-card:active { transform: scale(0.98); }
         .card-header { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
         .date-badge { font-weight: 700; color: var(--primary-color); font-size: 16px; }
         .info-row { font-size: 14px; margin: 5px 0; color: #2f3542; display: flex; justify-content: space-between; }
@@ -21,6 +23,14 @@
         .btn-disabled { background: #ced6e0; color: white; cursor: not-allowed; }
         .notice { font-size: 12px; color: #eb4d4b; text-align: center; margin-top: 8px; font-weight: bold; }
         #loading, #no-data { text-align: center; color: #747d8c; margin-top: 50px; display: none; }
+
+        /* QR Code 彈窗樣式 */
+        #qr-modal {
+            display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center;
+        }
+        .qr-box { background: white; padding: 25px; border-radius: 20px; text-align: center; width: 80%; max-width: 300px; }
+        .qr-box img { width: 100%; height: auto; margin: 15px 0; }
     </style>
 </head>
 <body>
@@ -28,6 +38,15 @@
     <div id="loading">讀取資料中...</div>
     <div id="no-data">目前沒有符合條件的預約</div>
     <div class="list-container" id="list-area"></div>
+
+    <div id="qr-modal" onclick="closeQR()">
+        <div class="qr-box" onclick="event.stopPropagation()">
+            <h3 style="margin:0; font-size: 18px;">預約單 QR Code</h3>
+            <div id="qr-id-display" style="font-size: 12px; color: #747d8c; margin-top: 5px;"></div>
+            <img id="qr-img" src="" alt="QR Code">
+            <button class="cancel-btn" style="background:#2e86de;" onclick="closeQR()">關閉</button>
+        </div>
+    </div>
 
     <script>
         const LIFF_ID = '2009076774-iFPf2YqP';
@@ -51,7 +70,22 @@
                 });
         }
 
-        function cancelBooking(rId) {
+        /**
+         * 彈出 QR Code 視窗
+         */
+        function showQR(rId) {
+            const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(rId)}&size=250`;
+            document.getElementById('qr-img').src = qrUrl;
+            document.getElementById('qr-id-display').innerText = "單號：" + rId;
+            document.getElementById('qr-modal').style.display = 'flex';
+        }
+
+        function closeQR() {
+            document.getElementById('qr-modal').style.display = 'none';
+        }
+
+        function cancelBooking(event, rId) {
+            event.stopPropagation(); // 重點：防止點擊取消按鈕時觸發卡片的 showQR
             Swal.fire({
                 title: '確定取消？',
                 text: "預約單號：" + rId,
@@ -81,7 +115,7 @@
             area.innerHTML = data.map(item => {
                 const isConfirmed = item.rConfirm == "1";
                 return `
-                <div class="booking-card">
+                <div class="booking-card" onclick="showQR('${item.rId}')">
                     <div class="card-header">
                         <div class="date-badge">${item.rDate} <small style="color:#747d8c">${item.startTime}</small></div>
                         <div style="font-size:11px; font-weight:bold; color:${isConfirmed?'#1976d2':'#f57c00'}">${isConfirmed?'店家已確認':'待確認'}</div>
@@ -91,7 +125,7 @@
                     
                     <button class="cancel-btn ${isConfirmed ? 'btn-disabled' : ''}" 
                             ${isConfirmed ? 'disabled' : ''} 
-                            onclick="cancelBooking('${item.rId}')">取消預約</button>
+                            onclick="cancelBooking(event, '${item.rId}')">取消預約</button>
                     ${isConfirmed ? '<div class="notice">如需取消請聯絡店家，謝謝!!</div>' : ''}
                 </div>`;
             }).join('');

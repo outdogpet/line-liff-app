@@ -3,61 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毛小孩資料維護</title>
+    <title>OUT DOG 寵物美容</title>
     <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { font-family: -apple-system, sans-serif; background-color: #f5f5f5; padding: 15px; margin: 0; }
         .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
         h3 { text-align: center; color: #333; margin-top: 0; margin-bottom: 20px; }
-        
         .section-title { background-color: #06c755; color: white; padding: 10px 15px; border-radius: 5px; margin: 25px 0 15px 0; font-weight: bold; font-size: 16px; }
         .section-title:first-of-type { margin-top: 0; }
-        
         .pet-controls { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 20px; background-color: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6c9; }
         .pet-select-wrapper { flex-grow: 1; }
         .pet-select-wrapper label { font-weight: bold; color: #2e7d32; display: block; margin-bottom: 5px; font-size: 14px; }
         .btn-add-new { flex-shrink: 0; background-color: #ff9800; color: white; border: none; padding: 10px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; height: 44px; display: flex; align-items: center; }
-        
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555; }
-        
-        .form-control, .form-select { 
-            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; 
-            box-sizing: border-box; font-size: 16px; background-color: #fff; height: 44px; line-height: 1.2; 
-            -webkit-appearance: none; appearance: none;
-        }
-        
+        .form-control, .form-select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; font-size: 16px; background-color: #fff; height: 44px; line-height: 1.2; -webkit-appearance: none; appearance: none; }
         .readonly-field { background-color: #f0f0f0 !important; color: #666; cursor: not-allowed; }
-
         .disease-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .checkbox-item { display: flex; align-items: center; background: #f9f9f9; padding: 10px; border-radius: 5px; border: 1px solid #eee; box-sizing: border-box;}
         .checkbox-item input { margin-right: 10px; width: 20px; height: 20px; flex-shrink: 0; }
-        
         .memo-container { grid-column: span 2; border: 1px solid #eee; padding: 12px; border-radius: 8px; background: #fff; }
         .memo-header { display: flex; align-items: center; margin-bottom: 8px; }
         .memo-header input { margin-right: 10px; width: 20px; height: 20px; }
         .memo-input { width: 85%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; display: block; margin-left: 30px; box-sizing: border-box; }
-
         .btn-submit { width: 100%; padding: 14px; background-color: #06c755; color: white; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 30px; box-shadow: 0 4px 6px rgba(6,199,85,0.2); }
-        
         #loading-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 999; font-weight: bold; color: #06c755; }
         #mode-label { font-size: 13px; color: #666; text-align: right; margin-bottom: 10px; display: none;}
     </style>
 </head>
 <body>
-
     <div id="loading-mask"><div>資料讀取中...</div></div>
-
     <div class="container">
         <h3>🐶 毛小孩資料維護 🐱</h3>
-        
         <div class="pet-controls">
             <div class="pet-select-wrapper">
                 <label>維護既有寵物：</label>
-                <select id="pet-select" class="form-select" onchange="onPetSelectChange()">
-                    <option value="" disabled selected>🔽 讀取中...</option>
-                </select>
+                <select id="pet-select" class="form-select" onchange="onPetSelectChange()"><option value="" disabled selected>🔽 讀取中...</option></select>
             </div>
             <button class="btn-add-new" onclick="switchToNewPetMode()">➕ 新增</button>
         </div>
@@ -66,7 +48,6 @@
         <div id="pet-form">
             <div class="section-title">📂 基本資料</div>
             <input type="hidden" id="current_p_id" value="">
-            
             <div class="form-group"><label>寵物名稱 <span style="color:red">*</span></label><input type="text" id="p_name" class="form-control" placeholder="請輸入寵物姓名"></div>
             <div class="form-group" style="display:flex; gap:10px;">
                 <div style="flex:1;"><label>種類</label><select id="p_type" class="form-select"><option value="1">🐶 狗</option><option value="2">🐱 貓</option></select></div>
@@ -83,21 +64,23 @@
 
             <div class="section-title">🏥 健康狀況</div>
             <div class="form-group">
-                <div class="checkbox-item" style="margin-bottom:12px; background:#fff3e0;"><input type="checkbox" id="ps_none" onchange="toggleHealthy(this)"><label for="ps_none" style="margin:0; width:100%; font-weight:bold;">健康無疾病</label></div>
+                <div class="checkbox-item" style="margin-bottom:12px; background:#fff3e0;"><input type="checkbox" id="ps_none" onchange="toggleHealthy(this)"><label for="ps_none" style="margin:0; width:100%; font-weight:bold;">無疾病</label></div>
                 <div class="disease-grid" id="sick-list">
-                    <div class="checkbox-item"><input type="checkbox" id="ps_ckd" onchange="onSickItemChange()"><label for="ps_ckd">慢性腎衰</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="ps_ckd" onchange="onSickItemChange()"><label for="ps_ckd">慢性腎衰竭</label></div>
                     <div class="checkbox-item"><input type="checkbox" id="ps_rv" onchange="onSickItemChange()"><label for="ps_rv">狂犬病</label></div>
                     <div class="checkbox-item"><input type="checkbox" id="ps_hi" onchange="onSickItemChange()"><label for="ps_hi">聽力受損</label></div>
                     <div class="checkbox-item"><input type="checkbox" id="ps_vi" onchange="onSickItemChange()"><label for="ps_vi">視力受損</label></div>
-                    <div class="checkbox-item"><input type="checkbox" id="ps_hwd" onchange="onSickItemChange()"><label for="ps_hwd">心絲蟲</label></div>
-                    <div class="checkbox-item"><input type="checkbox" id="ps_gi" onchange="onSickItemChange()"><label for="ps_gi">病毒腸炎</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="ps_hwd" onchange="onSickItemChange()"><label for="ps_hwd">行動不便</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="ps_gi" onchange="onSickItemChange()"><label for="ps_gi">癲癇</label></div>
                     <div class="checkbox-item"><input type="checkbox" id="ps_cdv" onchange="onSickItemChange()"><label for="ps_cdv">犬瘟熱</label></div>
-                    <div class="checkbox-item"><input type="checkbox" id="ps_piv" onchange="onSickItemChange()"><label for="ps_piv">副流感</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="ps_piv" onchange="onSickItemChange()"><label for="ps_piv">氣管塌陷</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="ps_hd" onchange="onSickItemChange()"><label for="ps_hd">心臟病</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="ps_asth" onchange="onSickItemChange()"><label for="ps_asth">氣喘(易喘)</label></div>
                     <div class="memo-container"><div class="memo-header"><input type="checkbox" id="ps_dl" disabled><label for="ps_dl">關節脫臼</label></div><input type="text" id="ps_dl_memo" class="memo-input" placeholder="請說明脫臼部位..." oninput="updateLinkedCheckbox('ps_dl','ps_dl_memo','sick')"></div>
                     <div class="memo-container"><div class="memo-header"><input type="checkbox" id="ps_ntds" disabled><label for="ps_ntds">寄生蟲感染</label></div><input type="text" id="ps_ntds_memo" class="memo-input" placeholder="請說明感染種類..." oninput="updateLinkedCheckbox('ps_ntds','ps_ntds_memo','sick')"></div>
                     <div class="memo-container"><div class="memo-header"><input type="checkbox" id="ps_oa" disabled><label for="ps_oa">骨骼舊傷</label></div><input type="text" id="ps_oa_memo" class="memo-input" placeholder="請說明受傷部位..." oninput="updateLinkedCheckbox('ps_oa','ps_oa_memo','sick')"></div>
                     <div class="memo-container"><div class="memo-header"><input type="checkbox" id="ps_ad" disabled><label for="ps_ad">皮膚疾病</label></div><input type="text" id="ps_ad_memo" class="memo-input" placeholder="請說明狀況..." oninput="updateLinkedCheckbox('ps_ad','ps_ad_memo','sick')"></div>
-                    <div class="memo-container"><div class="memo-header"><input type="checkbox" id="ps_other" disabled><label for="ps_other">其他病史</label></div><input type="text" id="ps_other_memo" class="memo-input" placeholder="內容..." oninput="updateLinkedCheckbox('ps_other','ps_other_memo','sick')"></div>
+                    <div class="memo-container"><div class="memo-header"><input type="checkbox" id="ps_other" disabled><label for="ps_other">其他</label></div><input type="text" id="ps_other_memo" class="memo-input" placeholder="內容..." oninput="updateLinkedCheckbox('ps_other','ps_other_memo','sick')"></div>
                 </div>
             </div>
 
@@ -106,23 +89,22 @@
                 <div class="checkbox-item" style="margin-bottom:12px; background:#fff3e0;"><input type="checkbox" id="pw_none" onchange="toggleWariness(this)"><label for="pw_none" style="margin:0; width:100%; font-weight:bold;">無須注意事項</label></div>
                 <div class="disease-grid" id="wariness-list">
                     <div class="checkbox-item"><input type="checkbox" id="pw_asb" onchange="onWarinessItemChange()"><label for="pw_asb">具攻擊性</label></div>
-                    <div class="checkbox-item"><input type="checkbox" id="pw_wn" onchange="onWarinessItemChange()"><label for="pw_wn">怕吹風機</label></div>
-                    <div class="checkbox-item"><input type="checkbox" id="pw_mani" onchange="onWarinessItemChange()"><label for="pw_mani">怕剪指甲</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="pw_wn" onchange="onWarinessItemChange()"><label for="pw_wn">不親狗</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="pw_mani" onchange="onWarinessItemChange()"><label for="pw_mani">易緊張</label></div>
                     <div class="checkbox-item"><input type="checkbox" id="pw_sad" onchange="onWarinessItemChange()"><label for="pw_sad">分離焦慮</label></div>
-                    <div class="checkbox-item"><input type="checkbox" id="pw_dds" onchange="onWarinessItemChange()"><label for="pw_dds">易掙扎</label></div>
+                    <div class="checkbox-item"><input type="checkbox" id="pw_dds" onchange="onWarinessItemChange()"><label for="pw_dds">掙扎</label></div>
                     <div class="checkbox-item"><input type="checkbox" id="pw_pd" onchange="onWarinessItemChange()"><label for="pw_pd">不親人</label></div>
                     <div class="memo-container"><div class="memo-header"><input type="checkbox" id="pw_bwa" disabled><label for="pw_bwa">敏感部位</label></div><input type="text" id="pw_bwa_memo" class="memo-input" placeholder="例如：耳朵、尾巴..." oninput="updateLinkedCheckbox('pw_bwa','pw_bwa_memo','war')"></div>
                     <div class="memo-container"><div class="memo-header"><input type="checkbox" id="pw_other" disabled><label for="pw_other">其他注意</label></div><input type="text" id="pw_other_memo" class="memo-input" placeholder="說明..." oninput="updateLinkedCheckbox('pw_other','pw_other_memo','war')"></div>
                 </div>
             </div>
-
             <button id="btn-save" class="btn-submit" onclick="savePet()">確認儲存</button>
         </div>
     </div>
 
     <script>
-        const MY_LIFF_ID = '2009076774-iFPf2YqP'; 
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzciNP_1cdq9XBnfcgTj5gv_QEt2xk-cevUsocHJx5j4IxjhJvS9DHHz1hhPXzDQHl/exec';
+        const MY_LIFF_ID = '2009076774-PLi3IgqW'; 
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbzOekWHTlI8C3YdRhE090SQxRK6KuIJEuTgAx-gX3K5sPkz_yErb8EXHkvVssGKeV0/exec';
         let currentUserId = '', allBreedsData = [];
 
         window.onload = function() {
@@ -163,7 +145,8 @@
                     }
                     if(d.sick) {
                         const setC = (id, v) => { document.getElementById(id).checked = (v == 1); }; const setV = (id, v) => { document.getElementById(id).value = v || ''; };
-                        setC('ps_none', d.sick.ps_none); setC('ps_ckd', d.sick.ps_ckd); setC('ps_rv', d.sick.ps_rv); setC('ps_hi', d.sick.ps_hi); setC('ps_vi', d.sick.ps_vi); setC('ps_hwd', d.sick.ps_hwd); setC('ps_gi', d.sick.ps_gi); setC('ps_cdv', d.sick.ps_cdv); setC('ps_piv', d.sick.ps_piv); setV('ps_dl_memo', d.sick.ps_dl_memo); setC('ps_dl', d.sick.ps_dl); setV('ps_ntds_memo', d.sick.ps_ntds_memo); setC('ps_ntds', d.sick.ps_ntds); setV('ps_oa_memo', d.sick.ps_oa_memo); setC('ps_oa', d.sick.ps_oa); setV('ps_ad_memo', d.sick.ps_ad_memo); setC('ps_ad', d.sick.ps_ad); setV('ps_other_memo', d.sick.ps_other_memo); setC('ps_other', d.sick.ps_other);
+                        setC('ps_none', d.sick.ps_none); setC('ps_ckd', d.sick.ps_ckd); setC('ps_rv', d.sick.ps_rv); setC('ps_hi', d.sick.ps_hi); setC('ps_vi', d.sick.ps_vi); setC('ps_hwd', d.sick.ps_hwd); setC('ps_gi', d.sick.ps_gi); setC('ps_cdv', d.sick.ps_cdv); setC('ps_piv', d.sick.ps_piv); setC('ps_hd', d.sick.ps_hd); setC('ps_asth', d.sick.ps_asth);
+                        setV('ps_dl_memo', d.sick.ps_dl_memo); setC('ps_dl', d.sick.ps_dl); setV('ps_ntds_memo', d.sick.ps_ntds_memo); setC('ps_ntds', d.sick.ps_ntds); setV('ps_oa_memo', d.sick.ps_oa_memo); setC('ps_oa', d.sick.ps_oa); setV('ps_ad_memo', d.sick.ps_ad_memo); setC('ps_ad', d.sick.ps_ad); setV('ps_other_memo', d.sick.ps_other_memo); setC('ps_other', d.sick.ps_other);
                     }
                     if(d.wariness) {
                         const setC = (id, v) => { document.getElementById(id).checked = (v == 1); }; const setV = (id, v) => { document.getElementById(id).value = v || ''; };
@@ -181,15 +164,13 @@
 
         function savePet() {
             const name = document.getElementById('p_name').value, breeds = document.getElementById('p_breeds').value;
-            if (!name || !breeds) { 
-                Swal.fire({ icon: 'warning', title: '缺少資料', text: '請填寫必填欄位 (名稱與品種)' });
-                return; 
-            }
-            
+            if (!name || !breeds) { Swal.fire({ icon: 'warning', title: '缺少資料', text: '請填寫必填欄位 (名稱與品種)' }); return; }
             const btn = document.getElementById('btn-save'); btn.disabled = true; btn.innerText = '儲存中...';
             const getC = (id) => document.getElementById(id).checked ? 1 : 0, getV = (id) => document.getElementById(id).value.trim();
-            const sC = ['ps_ckd','ps_rv','ps_hi','ps_vi','ps_hwd','ps_gi','ps_cdv','ps_piv','ps_dl','ps_ntds','ps_oa','ps_ad','ps_other'];
+            
+            const sC = ['ps_ckd','ps_rv','ps_hi','ps_vi','ps_hwd','ps_gi','ps_cdv','ps_piv','ps_hd','ps_asth','ps_dl','ps_ntds','ps_oa','ps_ad','ps_other'];
             const sM = ['ps_dl_memo','ps_ntds_memo','ps_oa_memo','ps_ad_memo','ps_other_memo'];
+            // 這裡變數名稱沒變，但前端顯示已經代表新的意義 (wn=不親狗, mani=易緊張, dds=掙扎)
             const wC = ['pw_asb','pw_wn','pw_mani','pw_sad','pw_dds','pw_pd','pw_bwa','pw_other'];
             const wM = ['pw_bwa_memo','pw_other_memo'];
             const anyS = sC.some(id => getC(id) === 1); const anyW = wC.some(id => getC(id) === 1);
@@ -200,19 +181,8 @@
 
             fetch(GAS_URL + params).then(res => res.json()).then(result => { 
                 if (result.status === 'success') { 
-                    Swal.fire({ 
-                        icon: 'success', 
-                        title: '儲存成功！', 
-                        showConfirmButton: false, 
-                        timer: 1500 
-                    }).then(() => { 
-                        // ✅ 修改點：存檔成功後直接關閉 LIFF 視窗
-                        if (liff.isInClient()) {
-                            liff.closeWindow(); 
-                        } else {
-                            // 若是在一般瀏覽器中測試，則跳轉回首頁，避免畫面卡住
-                            window.location.href = GAS_URL;
-                        }
+                    Swal.fire({ icon: 'success', title: '儲存成功！', showConfirmButton: false, timer: 1500 }).then(() => { 
+                        if (liff.isInClient()) { liff.closeWindow(); } else { window.location.href = GAS_URL; }
                     });
                 } 
             }).catch(err => { 
